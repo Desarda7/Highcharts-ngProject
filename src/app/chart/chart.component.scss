@@ -1,0 +1,42 @@
+.chart-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chart-header {
+  padding: 10px;
+  background-color: #f8f9fa;
+  width: 100%;
+  text-align: center;
+}
+
+.chart-controls {
+  padding: 10px;
+  background-color: #e9ecef;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.chart-area {
+  flex-grow: 1;
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+:host {
+  display: block;
+  height: 100%;
+}
+
+#container {
+  height: 100%;
+  width: 100%;
+}
