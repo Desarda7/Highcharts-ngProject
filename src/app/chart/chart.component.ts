@@ -1,8 +1,9 @@
-import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit } from '@angular/core';
 import * as Highcharts from 'highcharts/highstock';
 import StockTools from 'highcharts/modules/stock-tools';
 import HC_exporting from 'highcharts/modules/exporting';
-import { OhlcDataService } from '../ohlc-data.service';
+import { OhlcDataService } from '../services/ohlc-data.service';
+import { Subject, takeLast, takeUntil } from 'rxjs';
 
 StockTools(Highcharts);
 HC_exporting(Highcharts);
@@ -12,10 +13,11 @@ HC_exporting(Highcharts);
   templateUrl: './chart.component.html',
   styleUrls: ['./chart.component.scss'],
 })
-export class ChartComponent implements AfterViewInit {
+export class ChartComponent implements AfterViewInit, OnDestroy {
   Highcharts: typeof Highcharts = Highcharts;
   chartOptions: Highcharts.Options;
   chart!: Highcharts.Chart;
+  private cancelSubscription$ = new Subject<void>();
 
   constructor(private ohlcDataService: OhlcDataService) {
     this.chartOptions = {
@@ -37,7 +39,7 @@ export class ChartComponent implements AfterViewInit {
         {
           type: 'candlestick',
           name: 'USD/EUR',
-          data: [], // Data will be fetched and set in ngOnInit
+          data: [],
           tooltip: {
             valueDecimals: 2,
           },
@@ -54,24 +56,31 @@ export class ChartComponent implements AfterViewInit {
   }
 
   fetchData(): void {
-    this.ohlcDataService.getOhlcData().subscribe((data) => {
-      console.log('Data in fetchData:', data);
-      const seriesOptions: Highcharts.SeriesCandlestickOptions = {
-        type: 'candlestick',
-        name: 'USD/EUR',
-        data: data,
-        tooltip: {
-          valueDecimals: 2,
-        },
-      };
-      if (!this.chart) {
-        this.chartOptions.series = [seriesOptions];
-        this.chart = Highcharts.stockChart('container', this.chartOptions);
-      } else {
-        this.chart.update({
-          series: [seriesOptions],
-        });
-      }
-    });
+    this.ohlcDataService
+      .getOhlcData()
+      .pipe(takeUntil(this.cancelSubscription$))
+      .subscribe((data) => {
+        console.log('Data in fetchData:', data);
+        const seriesOptions: Highcharts.SeriesCandlestickOptions = {
+          type: 'candlestick',
+          name: 'USD/EUR',
+          data: data,
+          tooltip: {
+            valueDecimals: 2,
+          },
+        };
+        if (!this.chart) {
+          this.chartOptions.series = [seriesOptions];
+          this.chart = Highcharts.stockChart('container', this.chartOptions);
+        } else {
+          this.chart.update({
+            series: [seriesOptions],
+          });
+        }
+      });
+  }
+  ngOnDestroy(): void {
+    this.cancelSubscription$.next();
+    this.cancelSubscription$.complete();
   }
 }
